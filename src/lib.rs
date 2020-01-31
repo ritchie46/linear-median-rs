@@ -46,6 +46,7 @@ where
     T: Copy + PartialOrd + Num + NumCast,
 {
     let mut a: Vec<T> = a.iter().cloned().collect();
+    // Todo: unwrap with error handling
     a.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
     let mid = a.len() / 2;
@@ -61,12 +62,42 @@ fn quickselect_median<T>(a: &[T], pivot_fn: &dyn Fn(&[T]) -> Option<T>) -> Optio
 where
     T: Copy + PartialOrd + Num + NumCast,
 {
+    if a.len() % 2 == 1 {
+        quickselect(a, a.len() / 2, pivot_fn)
+    } else {
+        // median is not exactly in the middle of the array when sorted
+        let median_min1 = quickselect(a, a.len() / 2 - 1, pivot_fn)?;
+        let median_plus1 = quickselect(a, a.len() / 2, pivot_fn)?;
+        let div = T::from(2)?;
+        Some((median_min1 + median_plus1) / div)
+    }
+}
+
+fn pick_pivot<T>(a: &[T]) -> Option<T>
+where
+    T: Copy + PartialOrd + Num + NumCast,
+{
+    // Todo
     if a.len() == 0 {
         return None;
     } else if a.len() < 5 {
         return nlogn_median(a);
     };
-    None
+
+    let medians: Vec<T> = a
+        .chunks_exact(5) // [[chunk-5], [chunk-5]...[chunk-5]]
+        .map(|x| {
+            // Need a mutable vector to be able to sort.
+            let mut a: Vec<T> = x.clone().to_vec();
+            // Every chunk has size of 5. So after sorting the median
+            // is at index 2.
+            // Todo: unwrap with error handling
+            a.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            // select median
+            a[2]
+        })
+        .collect();
+    quickselect_median(&medians, &pick_pivot)
 }
 
 #[cfg(test)]
@@ -95,5 +126,12 @@ mod tests {
 
         let a = [1, 2, 3, 4, 5];
         assert_eq!(quickselect(&a, 2, &choose_random).unwrap(), 3);
+    }
+
+    #[test]
+    fn test_median() {
+        let a = [1, 3, 4, 5, 6, 6, 8, 2, 3];
+        assert_eq!(nlogn_median(&a), quickselect_median(&a, &choose_random));
+        assert_eq!(nlogn_median(&a), quickselect_median(&a, &pick_pivot));
     }
 }
