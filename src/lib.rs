@@ -1,12 +1,11 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::cmp::PartialOrd;
+use std::fmt::Debug;
 use std::fs::read_to_string;
 use std::marker::Copy;
-use std::cmp::PartialOrd;
-use std::ops::{Add, Div};
-use std::fmt::Debug;
 extern crate num;
-use num::NumCast;
+use num::{Num, NumCast};
 
 fn choose_random<T>(a: &[T]) -> Option<T>
 where
@@ -19,7 +18,7 @@ where
 
 fn quickselect<T>(a: &[T], k: usize, pivot_fn: &dyn Fn(&[T]) -> Option<T>) -> Option<T>
 where
-    T: Copy + PartialOrd + Debug,
+    T: Copy + PartialOrd,
 {
     if a.len() == 1 {
         return match k {
@@ -42,8 +41,9 @@ where
 }
 
 fn nlogn_median<T>(a: &[T]) -> Option<T>
-    // https://users.rust-lang.org/t/generic-arithmetic-with-std-ops-add/6848
-    where T: Copy + PartialOrd + Div<Output=T> + Add<Output=T> + NumCast,
+// https://users.rust-lang.org/t/generic-arithmetic-with-std-ops-add/6848
+where
+    T: Copy + PartialOrd + Num + NumCast,
 {
     let mut a: Vec<T> = a.iter().cloned().collect();
     a.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -58,13 +58,13 @@ fn nlogn_median<T>(a: &[T]) -> Option<T>
 }
 
 fn quickselect_median<T>(a: &[T], pivot_fn: &dyn Fn(&[T]) -> Option<T>) -> Option<T>
-    where
-        T: Copy + PartialOrd + Div<Output=T> + Add<Output=T> + NumCast,
+where
+    T: Copy + PartialOrd + Num + NumCast,
 {
     if a.len() == 0 {
-        return None
+        return None;
     } else if a.len() < 5 {
-        return nlogn_median(a)
+        return nlogn_median(a);
     };
     None
 }
